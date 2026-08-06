@@ -9,8 +9,11 @@ export default function StudentDashboardRedirect() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
-      <span>Redirecting to Tenant Portal...</span>
+    <div className="min-h-screen bg-surface flex items-center justify-center text-primary font-bold text-sm">
+      <div className="flex items-center gap-3">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <span>Redirecting to Tenant Portal...</span>
+      </div>
     </div>
   );
 }
