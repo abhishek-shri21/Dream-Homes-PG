@@ -58,10 +58,10 @@ export default function Navbar() {
               Room Alerts
             </Link>
             <Link
-              href="/login?role=student"
+              href="/login?role=tenant"
               className="ml-1 bg-purple-100 hover:bg-purple-200 text-purple-800 px-3.5 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1"
             >
-              <span>🎓</span> Student Login
+              <span>🏠</span> Tenant Login
             </Link>
             <Link
               href="/login?role=owner"
@@ -105,8 +105,8 @@ export default function Navbar() {
               Room Alerts
             </Link>
             <div className="grid grid-cols-2 gap-2 pt-2">
-              <Link href="/login?role=student" className="px-3 py-2.5 bg-purple-100 text-purple-800 font-bold rounded-xl text-center text-xs">
-                🎓 Student Login
+              <Link href="/login?role=tenant" className="px-3 py-2.5 bg-purple-100 text-purple-800 font-bold rounded-xl text-center text-xs">
+                🏠 Tenant Login
               </Link>
               <Link href="/login?role=owner" className="px-3 py-2.5 bg-primary text-white font-bold rounded-xl text-center text-xs shadow-sm">
                 🏢 Owner Login

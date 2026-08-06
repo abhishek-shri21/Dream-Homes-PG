@@ -27,7 +27,7 @@ export default function Chatbot() {
     {
       role: "assistant",
       content:
-        "👋 **Namaste! I'm DreamBot**, powered by **Groq LLaMA 3.3 AI** for Dream Homes PG.\n\nAsk me anything about PG rooms, rent prices, amenities, complaints, or room availability. You can also use **Voice Commands** by tapping the microphone button below!",
+        "👋 **Namaste! I'm DreamPGbot**, your AI Assistant for Dream Homes PG.\n\nAsk me anything about PG rooms, rent prices, amenities, complaints, or room availability. You can also use **Voice Commands** by tapping the microphone button below!",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -41,19 +41,18 @@ export default function Chatbot() {
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState(null);
 
-  // Settings & Groq API Key
+  // Settings & API Key
   const [showSettings, setShowSettings] = useState(false);
-  const [groqApiKey, setGroqApiKey] = useState("");
+  const [apiKey, setApiKey] = useState("");
   const [copiedIndex, setCopiedIndex] = useState(null);
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Initialize Groq Key from localStorage or default
   useEffect(() => {
     const savedKey = localStorage.getItem("groq_api_key") || localStorage.getItem("grok_api_key");
     if (savedKey) {
-      setGroqApiKey(savedKey);
+      setApiKey(savedKey);
     }
   }, []);
 
@@ -144,10 +143,10 @@ export default function Chatbot() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Save Groq Key to localStorage
+  // Save Settings to localStorage
   const handleSaveSettings = (e) => {
     e.preventDefault();
-    localStorage.setItem("groq_api_key", groqApiKey.trim());
+    localStorage.setItem("groq_api_key", apiKey.trim());
     setShowSettings(false);
   };
 
@@ -179,7 +178,7 @@ export default function Chatbot() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map(({ role, content }) => ({ role, content })),
-          userApiKey: groqApiKey,
+          userApiKey: apiKey,
         }),
       });
 
@@ -191,8 +190,6 @@ export default function Chatbot() {
       const botMessage = {
         role: "assistant",
         content: botReply,
-        mode: data?.mode || "groq",
-        notice: data?.notice,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 
@@ -252,7 +249,7 @@ export default function Chatbot() {
         <button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 z-50 group flex items-center gap-3 bg-gradient-to-r from-primary via-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all duration-300 border-2 border-white/30"
-          aria-label="Open Groq AI Chatbot"
+          aria-label="Open DreamPGbot Assistant"
         >
           <div className="relative">
             <Bot className="w-7 h-7 text-white animate-pulse" />
@@ -263,9 +260,9 @@ export default function Chatbot() {
           </div>
           <div className="hidden sm:flex flex-col text-left pr-1">
             <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-300" /> Groq LLaMA AI
+              <Sparkles className="w-3 h-3 text-amber-300" /> AI Assistant
             </span>
-            <span className="text-sm font-extrabold leading-none">DreamBot Assistant</span>
+            <span className="text-sm font-extrabold leading-none">DreamPGbot</span>
           </div>
         </button>
       )}
@@ -285,9 +282,9 @@ export default function Chatbot() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-base tracking-tight text-white">DreamBot AI</h3>
-                  <span className="bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
-                    Groq LLaMA 3.3
+                  <h3 className="font-bold text-base tracking-tight text-white">DreamPGbot</h3>
+                  <span className="bg-white/20 text-white border border-white/30 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+                    AI Assistant
                   </span>
                 </div>
                 <p className="text-[11px] text-purple-200/90 font-medium flex items-center gap-1">
@@ -314,7 +311,7 @@ export default function Chatbot() {
                 className={`p-2 rounded-xl transition-all ${
                   showSettings ? "bg-white/25 text-white" : "hover:bg-white/10 text-purple-200"
                 }`}
-                title="Groq API Key Settings"
+                title="AI Settings"
               >
                 <Settings className="w-4 h-4" />
               </button>
@@ -353,27 +350,26 @@ export default function Chatbot() {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold flex items-center gap-1.5 text-purple-200">
-                  <Key className="w-3.5 h-3.5 text-amber-400" /> Groq API Key Configuration
+                  <Key className="w-3.5 h-3.5 text-amber-400" /> AI Assistant Settings
                 </span>
-                <span className="text-[10px] text-amber-300 font-semibold">Active Key Configured</span>
               </div>
               <div className="flex gap-2">
                 <input
                   type="password"
-                  value={groqApiKey}
-                  onChange={(e) => setGroqApiKey(e.target.value)}
-                  placeholder="gsk_..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Optional custom API key"
                   className="flex-1 bg-purple-900/60 border border-purple-700/60 text-xs text-white placeholder-purple-400 rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400"
                 />
                 <button
                   type="submit"
                   className="bg-amber-500 hover:bg-amber-400 text-purple-950 font-bold text-xs px-3 py-1.5 rounded-xl transition-colors"
                 >
-                  Save Key
+                  Save Settings
                 </button>
               </div>
               <p className="text-[10px] text-purple-300 mt-1.5">
-                Groq API Key provides lightning fast responses via LLaMA 3.3 model.
+                DreamPGbot provides instant intelligent responses for Dream Homes PG.
               </p>
             </form>
           )}
@@ -406,12 +402,6 @@ export default function Chatbot() {
                     }`}
                   >
                     {renderFormattedText(msg.content)}
-
-                    {msg.notice && (
-                      <div className="mt-2 pt-2 border-t border-gray-100 text-[10px] text-purple-600 font-semibold flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-500" /> {msg.notice}
-                      </div>
-                    )}
                   </div>
 
                   {/* Timestamp & Actions */}
@@ -457,7 +447,7 @@ export default function Chatbot() {
                   <Bot className="w-4 h-4" />
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center gap-2">
-                  <span className="text-xs font-semibold text-purple-700">Thinking with Groq AI</span>
+                  <span className="text-xs font-semibold text-purple-700">DreamPGbot is thinking</span>
                   <div className="flex gap-1">
                     <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce"></span>
                     <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>

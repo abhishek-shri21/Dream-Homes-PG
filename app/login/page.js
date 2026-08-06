@@ -4,22 +4,22 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase, hasSupabaseConfig } from "../../lib/supabaseClient";
-import { demoStudents } from "../../lib/db";
+import { demoTenants } from "../../lib/db";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialRole = searchParams.get("role") === "owner" ? "owner" : "student";
+  const initialRole = searchParams.get("role") === "owner" ? "owner" : "tenant";
 
-  const [role, setRole] = useState(initialRole); // 'student' | 'owner'
+  const [role, setRole] = useState(initialRole); // 'tenant' | 'owner'
 
-  // Student state
-  const [studentAuthMethod, setStudentAuthMethod] = useState("email"); // 'email' | 'phone'
-  const [studentEmail, setStudentEmail] = useState("");
-  const [studentPassword, setStudentPassword] = useState("");
-  const [studentPhone, setStudentPhone] = useState("");
-  const [studentPin, setStudentPin] = useState("");
-  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  // Tenant state
+  const [tenantAuthMethod, setTenantAuthMethod] = useState("email"); // 'email' | 'phone'
+  const [tenantEmail, setTenantEmail] = useState("");
+  const [tenantPassword, setTenantPassword] = useState("");
+  const [tenantPhone, setTenantPhone] = useState("");
+  const [tenantPin, setTenantPin] = useState("");
+  const [showTenantPassword, setShowTenantPassword] = useState(false);
 
   // Owner state
   const [ownerEmail, setOwnerEmail] = useState("owner@dreamhomespg.com");
@@ -33,25 +33,25 @@ function LoginContent() {
 
   useEffect(() => {
     const roleParam = searchParams.get("role");
-    if (roleParam === "owner" || roleParam === "student") {
-      setRole(roleParam);
+    if (roleParam === "owner" || roleParam === "tenant" || roleParam === "student") {
+      setRole(roleParam === "owner" ? "owner" : "tenant");
     }
   }, [searchParams]);
 
-  // Fill Quick Demo Credentials for Student
-  const handleQuickStudentSelect = (student) => {
-    setRole("student");
-    if (studentAuthMethod === "email") {
-      setStudentEmail(student.email);
-      setStudentPassword("student123");
+  // Autofill Demo Credentials for Tenant
+  const handleQuickTenantSelect = (tenant) => {
+    setRole("tenant");
+    if (tenantAuthMethod === "email") {
+      setTenantEmail(tenant.email);
+      setTenantPassword("tenant123");
     } else {
-      setStudentPhone(student.phone);
-      setStudentPin("1234");
+      setTenantPhone(tenant.phone);
+      setTenantPin("1234");
     }
     setError("");
   };
 
-  // Fill Quick Demo Credentials for Owner
+  // Autofill Demo Credentials for Owner
   const handleQuickOwnerSelect = () => {
     setRole("owner");
     setOwnerEmail("owner@dreamhomespg.com");
@@ -59,34 +59,42 @@ function LoginContent() {
     setError("");
   };
 
-  // Handle Student Login Submit
-  const handleStudentSubmit = async (e) => {
+  // Handle Smart Tenant Login Submit
+  const handleTenantSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccessMsg("");
 
+    // Auto-detect if owner email entered in tenant tab
+    if (tenantEmail.toLowerCase().includes("owner")) {
+      setRole("owner");
+      setOwnerEmail(tenantEmail);
+      setOwnerPassword(tenantPassword || "admin123");
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (hasSupabaseConfig && studentAuthMethod === "email" && studentEmail && studentPassword) {
-        // Attempt Supabase Auth login
+      if (hasSupabaseConfig && tenantAuthMethod === "email" && tenantEmail && tenantPassword) {
         const { data, error: authErr } = await supabase.auth.signInWithPassword({
-          email: studentEmail,
-          password: studentPassword,
+          email: tenantEmail,
+          password: tenantPassword,
         });
 
         if (!authErr && data?.user) {
-          const studentProfile = {
+          const tenantProfile = {
             id: data.user.id,
             email: data.user.email,
-            name: data.user.user_metadata?.full_name || studentEmail.split("@")[0],
+            name: data.user.user_metadata?.full_name || tenantEmail.split("@")[0],
             phone: data.user.user_metadata?.phone || "+91 9988776655",
             room_number: data.user.user_metadata?.room_number || "204",
             pg_name: data.user.user_metadata?.pg_name || "Dream Homes PG - Civil Lines",
-            role: "student",
+            role: "tenant",
           };
-          localStorage.setItem("pg_student_user", JSON.stringify(studentProfile));
-          setSuccessMsg("Login successful! Redirecting to your dashboard...");
-          setTimeout(() => router.push("/student/dashboard"), 600);
+          localStorage.setItem("pg_tenant_user", JSON.stringify(tenantProfile));
+          setSuccessMsg("Login successful! Redirecting to Tenant Portal...");
+          setTimeout(() => router.push("/tenant/dashboard"), 600);
           return;
         }
       }
@@ -94,39 +102,38 @@ function LoginContent() {
       // Demo fallback check
       await new Promise((r) => setTimeout(r, 600));
 
-      let matchedStudent = null;
-      if (studentAuthMethod === "email") {
-        matchedStudent = demoStudents.find(
-          (s) => s.email.toLowerCase() === studentEmail.trim().toLowerCase()
+      let matchedTenant = null;
+      if (tenantAuthMethod === "email") {
+        matchedTenant = demoTenants.find(
+          (s) => s.email.toLowerCase() === tenantEmail.trim().toLowerCase()
         );
       } else {
-        const cleanInputPhone = studentPhone.replace(/\s+/g, "");
-        matchedStudent = demoStudents.find((s) =>
+        const cleanInputPhone = tenantPhone.replace(/\s+/g, "");
+        matchedTenant = demoTenants.find((s) =>
           s.phone.replace(/\s+/g, "").includes(cleanInputPhone)
         );
       }
 
-      // Allow demo bypass with student123 or 1234 PIN or matched student
       if (
-        matchedStudent ||
-        (studentEmail.includes("@") && studentPassword === "student123") ||
-        (studentPhone.length >= 8 && studentPin === "1234")
+        matchedTenant ||
+        (tenantEmail.includes("@") && (tenantPassword === "tenant123" || tenantPassword === "student123")) ||
+        (tenantPhone.length >= 8 && tenantPin === "1234")
       ) {
-        const profile = matchedStudent || {
-          id: "STU-DEMO",
-          email: studentEmail || "arjun@student.com",
-          phone: studentPhone || "+91 9988776655",
+        const profile = matchedTenant || {
+          id: "TEN-DEMO",
+          email: tenantEmail || "arjun@tenant.com",
+          phone: tenantPhone || "+91 9988776655",
           name: "Arjun Mehra",
           room_number: "204",
           pg_name: "Dream Homes PG - Civil Lines",
-          role: "student",
+          role: "tenant",
         };
 
-        localStorage.setItem("pg_student_user", JSON.stringify(profile));
-        setSuccessMsg("Welcome back! Redirecting to Student Dashboard...");
-        setTimeout(() => router.push("/student/dashboard"), 600);
+        localStorage.setItem("pg_tenant_user", JSON.stringify(profile));
+        setSuccessMsg("Welcome back! Redirecting to Tenant Dashboard...");
+        setTimeout(() => router.push("/tenant/dashboard"), 600);
       } else {
-        setError("Invalid credentials. Try using demo student buttons below.");
+        setError("Invalid credentials. Try using demo tenant buttons below.");
       }
     } catch (err) {
       console.error(err);
@@ -153,7 +160,7 @@ function LoginContent() {
         if (!authErr && data?.user) {
           localStorage.setItem("pg_owner_logged_in", "true");
           localStorage.setItem("pg_owner_email", ownerEmail);
-          setSuccessMsg("Owner authentication verified! Redirecting...");
+          setSuccessMsg("Owner authentication verified! Redirecting to Owner Dashboard...");
           setTimeout(() => router.push("/admin/dashboard"), 600);
           return;
         }
@@ -162,10 +169,10 @@ function LoginContent() {
       // Demo fallback check
       await new Promise((r) => setTimeout(r, 600));
 
-      if (ownerEmail === "owner@dreamhomespg.com" && ownerPassword === "admin123") {
+      if (ownerEmail.toLowerCase().includes("owner") && ownerPassword === "admin123") {
         localStorage.setItem("pg_owner_logged_in", "true");
         localStorage.setItem("pg_owner_email", ownerEmail);
-        setSuccessMsg("Welcome Owner! Redirecting to Management Dashboard...");
+        setSuccessMsg("Welcome Owner! Redirecting to Owner Management Dashboard...");
         setTimeout(() => router.push("/admin/dashboard"), 600);
       } else {
         setError("Invalid Owner credentials. Use demo: owner@dreamhomespg.com / admin123");
@@ -180,7 +187,7 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex items-center justify-center p-4 py-12 relative overflow-hidden">
-      {/* Dynamic Background Glows */}
+      {/* Background Glows */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -206,7 +213,7 @@ function LoginContent() {
             Portal Access
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Choose your account role to sign in
+            Sign in to access your Tenant or Owner Dashboard
           </p>
         </div>
 
@@ -215,17 +222,17 @@ function LoginContent() {
           <button
             type="button"
             onClick={() => {
-              setRole("student");
+              setRole("tenant");
               setError("");
               setSuccessMsg("");
             }}
             className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-              role === "student"
+              role === "tenant"
                 ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-900/40"
                 : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
             }`}
           >
-            <span className="text-base">🎓</span> PG Student
+            <span className="text-base">🏠</span> PG Tenant
           </button>
           <button
             type="button"
@@ -260,22 +267,22 @@ function LoginContent() {
             </div>
           )}
 
-          {/* STUDENT LOGIN FORM */}
-          {role === "student" && (
+          {/* TENANT LOGIN FORM */}
+          {role === "tenant" && (
             <div>
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Student Login</h2>
-                  <p className="text-xs text-slate-400">Access complaints, rent status & PG info</p>
+                  <h2 className="text-lg font-bold text-white">Tenant Login</h2>
+                  <p className="text-xs text-slate-400">Access complaints, rent status & PG details</p>
                 </div>
 
                 {/* Sub auth method toggle */}
                 <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
                   <button
                     type="button"
-                    onClick={() => setStudentAuthMethod("email")}
+                    onClick={() => setTenantAuthMethod("email")}
                     className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                      studentAuthMethod === "email"
+                      tenantAuthMethod === "email"
                         ? "bg-purple-600 text-white"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
@@ -284,9 +291,9 @@ function LoginContent() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStudentAuthMethod("phone")}
+                    onClick={() => setTenantAuthMethod("phone")}
                     className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
-                      studentAuthMethod === "phone"
+                      tenantAuthMethod === "phone"
                         ? "bg-purple-600 text-white"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
@@ -296,20 +303,20 @@ function LoginContent() {
                 </div>
               </div>
 
-              <form onSubmit={handleStudentSubmit} className="space-y-4">
-                {studentAuthMethod === "email" ? (
+              <form onSubmit={handleTenantSubmit} className="space-y-4">
+                {tenantAuthMethod === "email" ? (
                   <>
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                        Student Registered Email
+                        Tenant Registered Email
                       </label>
                       <div className="relative">
                         <input
                           type="email"
                           required
-                          value={studentEmail}
-                          onChange={(e) => setStudentEmail(e.target.value)}
-                          placeholder="e.g. arjun@student.com"
+                          value={tenantEmail}
+                          onChange={(e) => setTenantEmail(e.target.value)}
+                          placeholder="e.g. arjun@tenant.com"
                           className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
                         />
                       </div>
@@ -321,19 +328,19 @@ function LoginContent() {
                       </label>
                       <div className="relative">
                         <input
-                          type={showStudentPassword ? "text" : "password"}
+                          type={showTenantPassword ? "text" : "password"}
                           required
-                          value={studentPassword}
-                          onChange={(e) => setStudentPassword(e.target.value)}
+                          value={tenantPassword}
+                          onChange={(e) => setTenantPassword(e.target.value)}
                           placeholder="••••••••"
                           className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all pr-10"
                         />
                         <button
                           type="button"
-                          onClick={() => setShowStudentPassword(!showStudentPassword)}
+                          onClick={() => setShowTenantPassword(!showTenantPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-semibold"
                         >
-                          {showStudentPassword ? "Hide" : "Show"}
+                          {showTenantPassword ? "Hide" : "Show"}
                         </button>
                       </div>
                     </div>
@@ -347,8 +354,8 @@ function LoginContent() {
                       <input
                         type="tel"
                         required
-                        value={studentPhone}
-                        onChange={(e) => setStudentPhone(e.target.value)}
+                        value={tenantPhone}
+                        onChange={(e) => setTenantPhone(e.target.value)}
                         placeholder="+91 9988776655"
                         className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
                       />
@@ -362,8 +369,8 @@ function LoginContent() {
                         type="password"
                         required
                         maxLength={6}
-                        value={studentPin}
-                        onChange={(e) => setStudentPin(e.target.value)}
+                        value={tenantPin}
+                        onChange={(e) => setTenantPin(e.target.value)}
                         placeholder="Default PIN: 1234"
                         className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
                       />
@@ -382,26 +389,26 @@ function LoginContent() {
                       Logging in...
                     </>
                   ) : (
-                    <>Login to Student Dashboard →</>
+                    <>Login to Tenant Dashboard →</>
                   )}
                 </button>
               </form>
 
-              {/* Demo Student Quick Fill */}
+              {/* Demo Tenant Quick Fill */}
               <div className="mt-6 pt-5 border-t border-slate-800">
                 <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">
-                  ⚡ Quick Demo Student Accounts:
+                  ⚡ Quick Demo Tenant Accounts:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {demoStudents.map((st) => (
+                  {demoTenants.map((st) => (
                     <button
                       key={st.id}
                       type="button"
-                      onClick={() => handleQuickStudentSelect(st)}
+                      onClick={() => handleQuickTenantSelect(st)}
                       className="text-left bg-slate-800/60 hover:bg-purple-950/50 border border-slate-700/80 hover:border-purple-500/50 p-2.5 rounded-xl transition-all group"
                     >
                       <div className="text-xs font-bold text-white group-hover:text-purple-300">
-                        👤 {st.name}
+                        🏠 {st.name}
                       </div>
                       <div className="text-[11px] text-slate-400">
                         {st.pg_name.replace("Dream Homes PG - ", "")} • Room {st.room_number}
