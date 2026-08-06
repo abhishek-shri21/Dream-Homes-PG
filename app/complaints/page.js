@@ -66,175 +66,194 @@ export default function ComplaintsPage() {
 
   if (submitted) {
     return (
-      <>
+      <div className="min-h-screen flex flex-col bg-surface">
         <Navbar />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-3xl shadow-lg p-8 max-w-md w-full text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Complaint Registered!</h2>
-            <p className="text-gray-500 mb-4 text-sm">
-              Your complaint has been received. The owner will assign someone to fix it shortly.
+        <div className="flex-1 flex items-center justify-center p-4 py-12">
+          <div className="bg-white rounded-[24px] border border-outline-variant/40 ambient-shadow p-8 max-w-md w-full text-center animate-fadeIn">
+            <div className="w-16 h-16 bg-emerald-600 text-white rounded-full flex items-center justify-center mx-auto text-3xl font-bold mb-4 shadow-lg">
+              ✓
+            </div>
+            <h2 className="text-2xl font-display font-extrabold text-primary mb-2">Complaint Registered!</h2>
+            <p className="text-onSurface-variant text-sm mb-6">
+              Your maintenance ticket has been logged successfully. The PG warden and owner have been notified.
             </p>
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 mb-6">
-              <p className="text-gray-500 text-sm mb-1">Your Complaint ID</p>
-              <p className="text-2xl font-bold text-purple-700 tracking-widest">{complaintId}</p>
-              <p className="text-gray-400 text-xs mt-1">Save this to track your complaint status</p>
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-6">
+              <p className="text-onSurface-variant text-xs uppercase font-bold tracking-wider mb-1">Your Complaint Ticket ID</p>
+              <p className="text-3xl font-display font-extrabold text-primary tracking-wider">{complaintId}</p>
+              <p className="text-onSurface-variant/70 text-xs mt-1">Keep this ID to track your maintenance progress</p>
             </div>
             <a
               href={`/track?id=${complaintId}`}
-              className="block w-full bg-purple-700 text-white py-3 rounded-xl font-semibold hover:bg-purple-800 transition-colors mb-3"
+              className="block w-full bg-primary hover:bg-primary-container text-white py-3.5 rounded-xl font-display font-bold text-sm shadow-md transition-all mb-3"
             >
-              Track My Complaint
+              Track Ticket Status →
             </a>
             <button
               onClick={() => { setSubmitted(false); setStep(1); setSelectedCategory(""); setForm({ pg_id: "", room_number: "", student_name: "", student_phone: "", description: "", priority: "medium" }); }}
-              className="text-gray-400 text-sm hover:underline"
+              className="text-xs text-primary font-bold hover:underline"
             >
-              Raise another complaint
+              + Raise Another Complaint
             </button>
           </div>
         </div>
         <Footer />
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-surface">
       <Navbar />
-      <div className="min-h-screen bg-gray-50 py-10">
-        <div className="max-w-2xl mx-auto px-4">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2" style={{ fontFamily: "Georgia, serif" }}>
-              Raise a Complaint
-            </h1>
-            <p className="text-gray-500 text-sm">Report your issue and we'll get it resolved ASAP.</p>
-          </div>
+      <div className="hero-gradient text-white py-12">
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h1 className="text-3xl sm:text-4xl font-display font-extrabold mb-2">
+            Raise Maintenance Ticket
+          </h1>
+          <p className="text-white/80 text-sm sm:text-base">
+            Report AC, plumbing, cleaning or WiFi issues for immediate resolution
+          </p>
+        </div>
+      </div>
 
-          {/* Steps */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            {[1, 2].map((s) => (
-              <div key={s} className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= s ? "bg-purple-700 text-white" : "bg-gray-200 text-gray-500"}`}>
-                  {s}
-                </div>
-                <span className={`text-sm ${step >= s ? "text-purple-700 font-medium" : "text-gray-400"}`}>
-                  {s === 1 ? "Select Issue" : "Your Details"}
-                </span>
-                {s < 2 && <div className={`w-12 h-0.5 ${step > s ? "bg-purple-700" : "bg-gray-200"}`} />}
+      <div className="max-w-2xl mx-auto px-4 py-10 w-full flex-1">
+        {/* Step Indicator */}
+        <div className="flex items-center justify-center gap-4 mb-8">
+          {[1, 2].map((s) => (
+            <div key={s} className="flex items-center gap-2">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${step >= s ? "bg-primary text-white shadow-md" : "bg-surface-container-high text-onSurface-variant"}`}>
+                {s}
               </div>
-            ))}
-          </div>
+              <span className={`text-xs font-bold ${step >= s ? "text-primary" : "text-onSurface-variant/60"}`}>
+                {s === 1 ? "Issue Category" : "Location & Details"}
+              </span>
+              {s < 2 && <div className={`w-12 h-0.5 ${step > s ? "bg-primary" : "bg-outline-variant/40"}`} />}
+            </div>
+          ))}
+        </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            {/* Step 1: Category */}
-            {step === 1 && (
-              <div>
-                <h2 className="font-bold text-gray-800 text-lg mb-4">What kind of issue are you facing?</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {categories.map((cat) => (
+        <div className="bg-white rounded-[24px] border border-outline-variant/40 ambient-shadow p-6 sm:p-8">
+          {/* Step 1: Category */}
+          {step === 1 && (
+            <div>
+              <h2 className="font-display font-bold text-primary text-lg mb-1">Select Issue Category</h2>
+              <p className="text-xs text-onSurface-variant mb-6">Choose the maintenance service you need</p>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {categories.map((cat) => {
+                  const active = selectedCategory === cat.id;
+                  return (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`p-4 rounded-xl border-2 text-left transition-all ${
-                        selectedCategory === cat.id
-                          ? "border-purple-600 bg-purple-50"
-                          : "border-gray-200 hover:border-purple-300"
+                      className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                        active
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-md"
+                          : "border-outline-variant/40 hover:border-primary/40 bg-white"
                       }`}
                     >
+                      {active && (
+                        <span className="absolute top-2.5 right-2.5 w-5 h-5 bg-primary text-white rounded-full flex items-center justify-center text-[10px] font-bold">
+                          ✓
+                        </span>
+                      )}
                       <div className="text-3xl mb-2">{cat.icon}</div>
-                      <div className="font-semibold text-gray-800 text-sm">{cat.label}</div>
-                      <div className="text-gray-400 text-xs mt-0.5">{cat.desc}</div>
+                      <div className="font-display font-bold text-primary text-sm">{cat.label}</div>
+                      <div className="text-onSurface-variant text-xs mt-0.5 leading-tight">{cat.desc}</div>
                     </button>
-                  ))}
-                </div>
-                <button
-                  disabled={!selectedCategory}
-                  onClick={() => setStep(2)}
-                  className="mt-6 w-full bg-purple-700 text-white py-3 rounded-xl font-semibold hover:bg-purple-800 transition-colors disabled:opacity-50"
-                >
-                  Continue →
-                </button>
+                  );
+                })}
               </div>
-            )}
 
-            {/* Step 2: Details */}
-            {step === 2 && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex items-center gap-3 bg-purple-50 rounded-xl p-3 mb-4">
+              <button
+                disabled={!selectedCategory}
+                onClick={() => setStep(2)}
+                className="mt-8 w-full bg-primary hover:bg-primary-container text-white py-3.5 rounded-xl font-display font-bold text-sm shadow-md transition-all disabled:opacity-40"
+              >
+                Continue to Details →
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Details Form */}
+          {step === 2 && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-2xl p-3.5 mb-4">
+                <div className="flex items-center gap-3">
                   <span className="text-2xl">{categories.find((c) => c.id === selectedCategory)?.icon}</span>
                   <div>
-                    <div className="font-semibold text-purple-800">{categories.find((c) => c.id === selectedCategory)?.label}</div>
-                    <button type="button" onClick={() => setStep(1)} className="text-purple-500 text-xs hover:underline">Change category</button>
+                    <div className="font-bold text-primary text-sm">{categories.find((c) => c.id === selectedCategory)?.label}</div>
+                    <span className="text-xs text-onSurface-variant">Category Selected</span>
                   </div>
                 </div>
+                <button type="button" onClick={() => setStep(1)} className="text-xs font-bold text-primary hover:underline">
+                  Change
+                </button>
+              </div>
 
+              <div>
+                <label className="block text-xs font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">Select your PG *</label>
+                <select
+                  name="pg_id"
+                  required
+                  value={form.pg_id}
+                  onChange={handleChange}
+                  className="w-full bg-surface border border-outline-variant/60 rounded-xl px-4 py-3 text-sm text-primary font-bold focus:outline-none focus:border-primary"
+                >
+                  <option value="">-- Select Your PG --</option>
+                  {pgs.map((pg) => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Select your PG *</label>
-                  <select
-                    name="pg_id"
-                    required
-                    value={form.pg_id}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="">-- Choose PG --</option>
-                    {pgs.map((pg) => <option key={pg.id} value={pg.id}>{pg.name}</option>)}
-                  </select>
+                  <label className="block text-xs font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">Your Name *</label>
+                  <input type="text" name="student_name" required value={form.student_name} onChange={handleChange} placeholder="e.g. Arjun Mehra" className="w-full bg-surface border border-outline-variant/60 rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-primary" />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Your Name *</label>
-                    <input type="text" name="student_name" required value={form.student_name} onChange={handleChange} placeholder="Full name" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Room Number *</label>
-                    <input type="text" name="room_number" required value={form.room_number} onChange={handleChange} placeholder="e.g. 204" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
-                  </div>
-                </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                  <input type="tel" name="student_phone" required value={form.student_phone} onChange={handleChange} placeholder="+91 XXXXX XXXXX" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                  <label className="block text-xs font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">Room Number *</label>
+                  <input type="text" name="room_number" required value={form.room_number} onChange={handleChange} placeholder="e.g. 204" className="w-full bg-surface border border-outline-variant/60 rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-primary" />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Describe the problem *</label>
-                  <textarea name="description" required value={form.description} onChange={handleChange} rows={3} placeholder="E.g. AC in room 204 is not cooling properly since 2 days..." className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none" />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">Mobile Number *</label>
+                <input type="tel" name="student_phone" required value={form.student_phone} onChange={handleChange} placeholder="+91 9988776655" className="w-full bg-surface border border-outline-variant/60 rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-primary" />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
-                  <div className="flex gap-3">
-                    {[
-                      { id: "low", label: "Low", color: "bg-green-50 border-green-300 text-green-700" },
-                      { id: "medium", label: "Medium", color: "bg-yellow-50 border-yellow-300 text-yellow-700" },
-                      { id: "high", label: "High — Urgent", color: "bg-red-50 border-red-300 text-red-700" },
-                    ].map((p) => (
-                      <label key={p.id} className={`flex-1 border-2 rounded-lg py-2 text-center text-xs font-semibold cursor-pointer transition-all ${form.priority === p.id ? p.color + " border-2" : "border-gray-200 text-gray-500"}`}>
-                        <input type="radio" name="priority" value={p.id} checked={form.priority === p.id} onChange={handleChange} className="hidden" />
-                        {p.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">Problem Details *</label>
+                <textarea name="description" required value={form.description} onChange={handleChange} rows={3} placeholder="Describe the issue clearly..." className="w-full bg-surface border border-outline-variant/60 rounded-xl px-4 py-3 text-sm text-primary focus:outline-none focus:border-primary resize-none" />
+              </div>
 
+              <div>
+                <label className="block text-xs font-bold text-onSurface-variant mb-2 uppercase tracking-wider">Priority Level</label>
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setStep(1)} className="flex-1 border border-gray-300 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-colors">
-                    ← Back
-                  </button>
-                  <button type="submit" disabled={loading} className="flex-2 flex-1 bg-purple-700 text-white py-3 rounded-xl font-semibold hover:bg-purple-800 transition-colors disabled:opacity-60">
-                    {loading ? "Submitting..." : "Submit Complaint"}
-                  </button>
+                  {[
+                    { id: "low", label: "Low", color: "bg-emerald-50 border-emerald-300 text-emerald-800" },
+                    { id: "medium", label: "Medium", color: "bg-amber-50 border-amber-300 text-amber-900" },
+                    { id: "high", label: "High — Urgent", color: "bg-red-50 border-red-300 text-red-800" },
+                  ].map((p) => (
+                    <label key={p.id} className={`flex-1 border-2 rounded-xl py-2.5 text-center text-xs font-bold cursor-pointer transition-all ${form.priority === p.id ? p.color + " ring-1" : "border-outline-variant/40 text-onSurface-variant"}`}>
+                      <input type="radio" name="priority" value={p.id} checked={form.priority === p.id} onChange={handleChange} className="hidden" />
+                      {p.label}
+                    </label>
+                  ))}
                 </div>
-              </form>
-            )}
-          </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setStep(1)} className="flex-1 bg-surface-container hover:bg-surface-container-high text-onSurface-variant py-3.5 rounded-xl font-bold text-xs transition-all">
+                  ← Back
+                </button>
+                <button type="submit" disabled={loading} className="flex-1 bg-primary hover:bg-primary-container text-white py-3.5 rounded-xl font-display font-bold text-xs shadow-md transition-all disabled:opacity-50">
+                  {loading ? "Submitting Ticket..." : "Submit Complaint Ticket →"}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
       <Footer />
-    </>
+    </div>
   );
 }

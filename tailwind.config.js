@@ -26,15 +26,32 @@ module.exports = {
           high: "#e7e8e9",
           lowest: "#ffffff",
         },
+        error: {
+          DEFAULT: "#ba1a1a",
+          container: "#ffdad6",
+          on: "#ffffff",
+        },
+        onSurface: {
+          variant: "#424752",
+        },
+        outline: {
+          DEFAULT: "#727783",
+          variant: "#c2c6d4",
+        },
       },
       fontFamily: {
-        display: ["Montserrat", "sans-serif"],
+        display: ["Montserrat", "Georgia", "sans-serif"],
         body: ["Inter", "sans-serif"],
       },
       borderRadius: {
         "2xl": "1.25rem",
         "3xl": "1.5rem",
         "4xl": "2rem",
+      },
+      boxShadow: {
+        ambient: "0 8px 30px rgba(0, 71, 144, 0.08)",
+        "ambient-nav": "0 10px 35px rgba(0, 71, 144, 0.12)",
+        "ambient-hover": "0 16px 40px rgba(0, 71, 144, 0.16)",
       },
     },
   },

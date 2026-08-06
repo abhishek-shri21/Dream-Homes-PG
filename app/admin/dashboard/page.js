@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [enquiries, setEnquiries] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [propertyFilter, setPropertyFilter] = useState("all");
 
   useEffect(() => {
     async function loadData() {
@@ -52,6 +53,15 @@ export default function AdminDashboard() {
     }
   };
 
+  // Filter complaints & enquiries by PG property if selected
+  const filteredComplaints = complaints.filter((c) =>
+    propertyFilter === "all" ? true : (c.pg_id === propertyFilter || (c.pg && c.pg.includes(propertyFilter)))
+  );
+
+  const filteredEnquiries = enquiries.filter((e) =>
+    propertyFilter === "all" ? true : (e.pg_id === propertyFilter || (e.pg && e.pg.includes(propertyFilter)))
+  );
+
   const tabs = [
     { id: "overview", label: "Overview", icon: "📊" },
     { id: "complaints", label: `Complaints (${pendingComplaints})`, icon: "🔧" },
@@ -61,203 +71,277 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top bar */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-surface">
+      {/* Top Header */}
+      <div className="bg-white shadow-sm border-b border-outline-variant/40 px-6 py-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg hero-gradient flex items-center justify-center">
-            <span className="text-white font-bold">D</span>
+          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-md">
+            <span className="text-white font-display font-extrabold text-xl">D</span>
           </div>
           <div>
-            <div className="font-bold text-gray-800 text-sm">Dream Homes PG</div>
-            <div className="text-gray-400 text-xs">Owner Dashboard</div>
+            <div className="font-display font-bold text-primary text-base leading-none">Dream Homes PG</div>
+            <div className="text-onSurface-variant text-xs mt-0.5 font-semibold">Owner & Property Manager Dashboard</div>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/" target="_blank" className="text-purple-700 text-sm hover:underline">View Site →</Link>
-          <Link href="/admin/login" className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-200">Logout</Link>
+          <Link href="/" target="_blank" className="text-xs text-primary font-bold hover:underline hidden sm:inline">
+            Public Website →
+          </Link>
+          <Link href="/login?role=owner" className="bg-surface-container hover:bg-surface-container-high text-onSurface-variant px-4 py-2 rounded-xl text-xs font-bold transition-all border border-outline-variant/40">
+            Logout
+          </Link>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-white rounded-xl p-1 border border-gray-200 w-fit flex-wrap">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === t.id ? "bg-purple-700 text-white" : "text-gray-600 hover:bg-gray-100"}`}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Navigation Tabs & Property Filter Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-3 rounded-[24px] border border-outline-variant/40 ambient-shadow">
+          <div className="flex gap-1 overflow-x-auto pb-1 md:pb-0">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                  activeTab === t.id
+                    ? "bg-primary text-white shadow-md shadow-primary/20"
+                    : "text-onSurface-variant hover:bg-surface-container"
+                }`}
+              >
+                <span>{t.icon}</span> {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Property Filter Dropdown */}
+          <div className="flex items-center gap-2 px-2">
+            <span className="text-xs font-bold text-onSurface-variant whitespace-nowrap">Filter PG:</span>
+            <select
+              value={propertyFilter}
+              onChange={(e) => setPropertyFilter(e.target.value)}
+              className="bg-surface border border-outline-variant/60 text-xs font-bold text-primary rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              {t.icon} {t.label}
-            </button>
-          ))}
+              <option value="all">All 6 Properties</option>
+              {pgs.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 space-y-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-700"></div>
-            <p className="text-gray-500 text-sm font-medium">Loading dashboard data...</p>
+          <div className="flex flex-col items-center justify-center py-20 space-y-3">
+            <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-onSurface-variant text-xs font-bold">Loading dashboard metrics...</p>
           </div>
         ) : (
           <>
-            {/* Overview */}
+            {/* OVERVIEW TAB: BENTO METRICS GRID */}
             {activeTab === "overview" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { label: "Total PGs", value: pgs.length, icon: "🏠", color: "purple" },
-                { label: "Available Rooms", value: totalAvailable, icon: "🚪", color: "green" },
-                { label: "Open Complaints", value: pendingComplaints, icon: "🔧", color: "red" },
-                { label: "New Enquiries", value: newEnquiries, icon: "📋", color: "orange" },
-              ].map((s) => (
-                <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                  <div className="text-3xl mb-2">{s.icon}</div>
-                  <div className="text-2xl font-bold text-gray-800">{s.value}</div>
-                  <div className="text-gray-400 text-sm">{s.label}</div>
-                </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  <div className="bg-white border border-outline-variant/40 rounded-[24px] p-6 ambient-shadow hover-lift">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-xs font-bold text-onSurface-variant uppercase tracking-wider">Total PG Properties</span>
+                      <span className="text-2xl">🏠</span>
+                    </div>
+                    <div className="text-3xl font-display font-extrabold text-primary">{pgs.length}</div>
+                    <div className="text-xs text-emerald-600 font-bold mt-1">Across Jodhpur</div>
+                  </div>
 
-            {/* Recent Complaints */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-gray-800">Recent Complaints</h2>
-                <button onClick={() => setActiveTab("complaints")} className="text-purple-700 text-sm hover:underline">View all</button>
+                  <div className="bg-white border border-outline-variant/40 rounded-[24px] p-6 ambient-shadow hover-lift">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-xs font-bold text-onSurface-variant uppercase tracking-wider">Available Rooms</span>
+                      <span className="text-2xl">🛏️</span>
+                    </div>
+                    <div className="text-3xl font-display font-extrabold text-primary">{totalAvailable}</div>
+                    <div className="text-xs text-onSurface-variant font-semibold mt-1">Ready for immediate check-in</div>
+                  </div>
+
+                  <div className="bg-white border border-outline-variant/40 rounded-[24px] p-6 ambient-shadow hover-lift">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-xs font-bold text-onSurface-variant uppercase tracking-wider">Active Complaints</span>
+                      <span className="text-2xl">🔧</span>
+                    </div>
+                    <div className="text-3xl font-display font-extrabold text-secondary">{pendingComplaints}</div>
+                    <div className="text-xs text-secondary font-bold mt-1">Requires warden resolution</div>
+                  </div>
+
+                  <div className="bg-white border border-outline-variant/40 rounded-[24px] p-6 ambient-shadow hover-lift">
+                    <div className="flex justify-between items-start mb-3">
+                      <span className="text-xs font-bold text-onSurface-variant uppercase tracking-wider">New Visitor Leads</span>
+                      <span className="text-2xl">📋</span>
+                    </div>
+                    <div className="text-3xl font-display font-extrabold text-primary">{newEnquiries}</div>
+                    <div className="text-xs text-emerald-600 font-bold mt-1">Pending enquiry calls</div>
+                  </div>
+                </div>
+
+                {/* Quick Action PG List Snapshot */}
+                <div className="bg-white rounded-[24px] border border-outline-variant/40 p-6 ambient-shadow space-y-4">
+                  <h3 className="font-display font-bold text-primary text-lg">Property Occupancy Snapshot</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {pgs.map((pg) => (
+                      <div key={pg.id} className="bg-surface-container/60 border border-outline-variant/30 rounded-2xl p-4 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-display font-bold text-primary text-sm">{pg.name}</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pg.pg_type === "boys" ? "badge-boys" : pg.pg_type === "girls" ? "badge-girls" : "badge-coliving"}`}>
+                              {pg.pg_type.toUpperCase()}
+                            </span>
+                          </div>
+                          <span className="text-xs text-onSurface-variant">{pg.locality} • {pg.curfew_time} Curfew</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-3 mt-2 border-t border-outline-variant/30 text-xs">
+                          <span className="text-onSurface-variant">Available Beds:</span>
+                          <span className="font-bold text-emerald-700">{pg.available_rooms} / {pg.total_rooms}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="space-y-3">
-                {complaints.slice(0, 3).map((c) => (
-                  <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{c.icon}</span>
-                      <div>
-                        <div className="font-medium text-gray-800 text-sm">{c.student} · Room {c.room}</div>
-                        <div className="text-gray-400 text-xs">{c.pg} · {c.category}</div>
+            )}
+
+            {/* COMPLAINTS TAB */}
+            {activeTab === "complaints" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display font-bold text-primary text-xl">Tenant Maintenance Tickets</h2>
+                  <span className="text-xs text-onSurface-variant">
+                    Showing {filteredComplaints.length} tickets
+                  </span>
+                </div>
+
+                {filteredComplaints.map((c) => (
+                  <div key={c.id} className="bg-white rounded-[24px] border border-outline-variant/40 p-6 ambient-shadow space-y-3">
+                    <div className="flex items-start justify-between flex-wrap gap-3">
+                      <div className="flex items-start gap-3">
+                        <span className="text-3xl">{c.categoryIcon || c.icon || "💡"}</span>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono font-bold text-primary text-sm">{c.id}</span>
+                            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${statusColors[c.status]}`}>{statusLabels[c.status]}</span>
+                            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${c.priority === "high" ? "bg-red-100 text-red-700" : c.priority === "medium" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{c.priority}</span>
+                          </div>
+                          <div className="text-primary font-bold text-sm mt-1">{c.student_name || c.student} · Room {c.room_number || c.room} · {c.pg_name || c.pg}</div>
+                          <div className="text-onSurface-variant text-xs mt-0.5">"{c.description}"</div>
+                          {c.assigned_to && <div className="text-emerald-700 font-bold text-xs mt-1">Assigned Technician: {c.assigned_to}</div>}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 items-end">
+                        <a href={`tel:${c.student_phone || c.phone}`} className="text-xs font-bold bg-surface-container hover:bg-surface-container-high text-primary px-3 py-1.5 rounded-xl border border-outline-variant/40">
+                          📞 {c.student_phone || c.phone}
+                        </a>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-onSurface-variant font-bold">Status:</span>
+                          <select
+                            value={c.status}
+                            onChange={(e) => updateComplaintStatus(c.id, e.target.value)}
+                            className="text-xs font-bold border border-outline-variant/60 rounded-xl px-3 py-1.5 bg-surface text-primary focus:outline-none"
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="resolved">Resolved</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[c.status]}`}>
-                      {statusLabels[c.status]}
-                    </span>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Complaints */}
-        {activeTab === "complaints" && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 text-xl">All Complaints</h2>
-            {complaints.map((c) => (
-              <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                <div className="flex items-start justify-between flex-wrap gap-3">
-                  <div className="flex items-start gap-3">
-                    <span className="text-3xl">{c.icon}</span>
+            {/* ENQUIRIES TAB */}
+            {activeTab === "enquiries" && (
+              <div className="space-y-4">
+                <h2 className="font-display font-bold text-primary text-xl">Visitor Leads & Booking Enquiries</h2>
+                {filteredEnquiries.map((e) => (
+                  <div key={e.id} className="bg-white rounded-[24px] border border-outline-variant/40 p-6 ambient-shadow flex items-center justify-between flex-wrap gap-4">
                     <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-gray-800">{c.id}</span>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColors[c.status]}`}>{statusLabels[c.status]}</span>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${c.priority === "high" ? "bg-red-100 text-red-600" : c.priority === "medium" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>{c.priority}</span>
-                      </div>
-                      <div className="text-gray-600 text-sm mt-0.5">{c.student} · Room {c.room} · {c.pg}</div>
-                      <div className="text-gray-400 text-xs mt-0.5">{c.category} · {c.created_at}</div>
-                      {c.assigned_to && <div className="text-purple-600 text-xs mt-0.5">Assigned to: {c.assigned_to}</div>}
+                      <div className="font-display font-bold text-primary text-base">{e.visitor_name || e.name}</div>
+                      <div className="text-onSurface-variant text-xs mt-0.5">{e.pg_name || e.pg} • {e.room_type} Room</div>
+                      <div className="text-onSurface-variant/70 text-xs mt-1">Move-in Date: {e.move_in_date || e.move_in}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <a href={`tel:${e.visitor_phone || e.phone}`} className="bg-primary hover:bg-primary-container text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm">
+                        📞 Call Lead
+                      </a>
+                      <select
+                        value={e.status}
+                        onChange={(eTarget) => updateEnquiryStatus(e.id, eTarget.target.value)}
+                        className="text-xs font-bold border border-outline-variant/60 rounded-xl px-3 py-2 bg-surface text-primary"
+                      >
+                        <option value="new">New Lead</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="converted">Converted</option>
+                      </select>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 items-end">
-                    <a href={`tel:${c.phone}`} className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200">📞 {c.phone}</a>
-                    <select
-                      value={c.status}
-                      onChange={(e) => updateComplaintStatus(c.id, e.target.value)}
-                      className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                    >
-                      <option value="pending">Pending</option>
-                      <option value="assigned">Assigned</option>
-                      <option value="resolved">Resolved</option>
-                    </select>
+                ))}
+              </div>
+            )}
+
+            {/* ROOM ALERTS TAB */}
+            {activeTab === "alerts" && (
+              <div className="bg-white rounded-[24px] border border-outline-variant/40 p-6 ambient-shadow space-y-4">
+                <h2 className="font-display font-bold text-primary text-xl">WhatsApp & Phone Room Alerts Log</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-surface-container text-onSurface-variant uppercase font-bold tracking-wider">
+                        <th className="py-3 px-4">Visitor Name</th>
+                        <th className="py-3 px-4">Phone</th>
+                        <th className="py-3 px-4">Requested PG</th>
+                        <th className="py-3 px-4">Room Type</th>
+                        <th className="py-3 px-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-container">
+                      {alerts.map((al) => (
+                        <tr key={al.id}>
+                          <td className="py-3.5 px-4 font-bold text-primary">{al.name}</td>
+                          <td className="py-3.5 px-4 text-onSurface-variant">{al.phone}</td>
+                          <td className="py-3.5 px-4 font-bold text-primary">{al.pg || al.pg_name}</td>
+                          <td className="py-3.5 px-4 text-onSurface-variant">{al.room_type} Room</td>
+                          <td className="py-3.5 px-4 text-right">
+                            <a href={`tel:${al.phone}`} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg transition-all text-xs">
+                              Call Back
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* MANAGE PGS TAB */}
+            {activeTab === "pgs" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pgs.map((pg) => (
+                  <div key={pg.id} className="bg-white rounded-[24px] border border-outline-variant/40 overflow-hidden ambient-shadow flex flex-col justify-between">
+                    <div className="h-44 relative">
+                      <img src={pg.cover_image_url} alt={pg.name} className="w-full h-full object-cover" />
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-primary">
+                        {pg.pg_type.toUpperCase()} PG
+                      </div>
+                    </div>
+                    <div className="p-5 space-y-3">
+                      <h3 className="font-display font-bold text-primary text-base">{pg.name}</h3>
+                      <p className="text-onSurface-variant text-xs">{pg.address}</p>
+                      <div className="flex justify-between items-center text-xs pt-2 border-t border-surface-container">
+                        <span className="text-onSurface-variant">Available Rooms:</span>
+                        <span className="font-bold text-emerald-700">{pg.available_rooms} / {pg.total_rooms}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
-
-        {/* Enquiries */}
-        {activeTab === "enquiries" && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 text-xl">Enquiries Received</h2>
-            {enquiries.map((e) => (
-              <div key={e.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <div className="font-semibold text-gray-800">{e.name}</div>
-                  <div className="text-gray-500 text-sm">{e.pg} · {e.room_type} Room</div>
-                  <div className="text-gray-400 text-xs mt-0.5">Move-in: {e.move_in}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <a href={`tel:${e.phone}`} className="bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-800 transition-colors">📞 Call</a>
-                  <select
-                    value={e.status}
-                    onChange={(ev) => updateEnquiryStatus(e.id, ev.target.value)}
-                    className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none"
-                  >
-                    <option value="new">New</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="converted">Converted</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Alerts */}
-        {activeTab === "alerts" && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 text-xl">Room Availability Alert Registrations</h2>
-            <p className="text-gray-500 text-sm">These people want to be called when a room opens up.</p>
-            {alerts.map((a) => (
-              <div key={a.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-gray-800">{a.name}</div>
-                  <div className="text-gray-500 text-sm">{a.pg} · {a.room_type} Room</div>
-                  <div className="text-gray-400 text-xs mt-0.5">Registered on {a.date}</div>
-                </div>
-                <a href={`tel:${a.phone}`} className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors">📞 {a.phone}</a>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Manage PGs */}
-        {activeTab === "pgs" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-bold text-gray-800 text-xl">Your PG Properties</h2>
-              <button className="bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-800 transition-colors">+ Add New PG</button>
-            </div>
-            {pgs.map((pg) => (
-              <div key={pg.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
-                <img src={pg.cover_image_url} alt={pg.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-gray-800">{pg.name}</div>
-                  <div className="text-gray-400 text-sm">{pg.locality} · {pg.pg_type}</div>
-                  <div className="text-xs mt-1">
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${pg.available_rooms > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"}`}>
-                      {pg.available_rooms > 0 ? `${pg.available_rooms} rooms available` : "Fully occupied"}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Link href={`/pgs/${pg.slug}`} target="_blank" className="text-xs bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200">View</Link>
-                  <button className="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg hover:bg-purple-200">Edit</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </>
-    )}
       </div>
     </div>
   );
