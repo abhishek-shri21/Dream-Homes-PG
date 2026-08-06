@@ -6,15 +6,15 @@ import Link from "next/link";
 import { supabase, hasSupabaseConfig } from "../../lib/supabaseClient";
 import { demoTenants } from "../../lib/db";
 
-function LoginContent() {
+export function LoginFormComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialRole = searchParams.get("role") === "owner" ? "owner" : "tenant";
 
-  const [role, setRole] = useState(initialRole); // 'tenant' | 'owner'
+  const [role, setRole] = useState(initialRole);
 
   // Tenant state
-  const [tenantAuthMethod, setTenantAuthMethod] = useState("email"); // 'email' | 'phone'
+  const [tenantAuthMethod, setTenantAuthMethod] = useState("email");
   const [tenantEmail, setTenantEmail] = useState("");
   const [tenantPassword, setTenantPassword] = useState("");
   const [tenantPhone, setTenantPhone] = useState("");
@@ -38,7 +38,7 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  // Autofill Demo Credentials for Tenant
+  // Quick Demo Autofill for Tenant
   const handleQuickTenantSelect = (tenant) => {
     setRole("tenant");
     if (tenantAuthMethod === "email") {
@@ -51,7 +51,7 @@ function LoginContent() {
     setError("");
   };
 
-  // Autofill Demo Credentials for Owner
+  // Quick Demo Autofill for Owner
   const handleQuickOwnerSelect = () => {
     setRole("owner");
     setOwnerEmail("owner@dreamhomespg.com");
@@ -59,14 +59,14 @@ function LoginContent() {
     setError("");
   };
 
-  // Handle Smart Tenant Login Submit
+  // Handle Smart Tenant Submit
   const handleTenantSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccessMsg("");
 
-    // Auto-detect if owner email entered in tenant tab
+    // Smart role routing: If user enters an owner email in tenant form, switch to owner dashboard!
     if (tenantEmail.toLowerCase().includes("owner")) {
       setRole("owner");
       setOwnerEmail(tenantEmail);
@@ -133,17 +133,17 @@ function LoginContent() {
         setSuccessMsg("Welcome back! Redirecting to Tenant Dashboard...");
         setTimeout(() => router.push("/tenant/dashboard"), 600);
       } else {
-        setError("Invalid credentials. Try using demo tenant buttons below.");
+        setError("Invalid credentials. Please use demo tenant accounts below.");
       }
     } catch (err) {
       console.error(err);
-      setError("An unexpected error occurred. Please try again.");
+      setError("An error occurred during authentication.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle Owner Login Submit
+  // Handle Owner Submit
   const handleOwnerSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -160,7 +160,7 @@ function LoginContent() {
         if (!authErr && data?.user) {
           localStorage.setItem("pg_owner_logged_in", "true");
           localStorage.setItem("pg_owner_email", ownerEmail);
-          setSuccessMsg("Owner authentication verified! Redirecting to Owner Dashboard...");
+          setSuccessMsg("Owner verified! Redirecting to Owner Dashboard...");
           setTimeout(() => router.push("/admin/dashboard"), 600);
           return;
         }
@@ -172,53 +172,51 @@ function LoginContent() {
       if (ownerEmail.toLowerCase().includes("owner") && ownerPassword === "admin123") {
         localStorage.setItem("pg_owner_logged_in", "true");
         localStorage.setItem("pg_owner_email", ownerEmail);
-        setSuccessMsg("Welcome Owner! Redirecting to Owner Management Dashboard...");
+        setSuccessMsg("Welcome Owner! Redirecting to Management Dashboard...");
         setTimeout(() => router.push("/admin/dashboard"), 600);
       } else {
-        setError("Invalid Owner credentials. Use demo: owner@dreamhomespg.com / admin123");
+        setError("Invalid Owner credentials. Demo: owner@dreamhomespg.com / admin123");
       }
     } catch (err) {
       console.error(err);
-      setError("Authentication error. Please try again.");
+      setError("Authentication error.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex items-center justify-center p-4 py-12 relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-surface flex flex-col justify-between p-4 py-10 relative overflow-hidden">
+      {/* Background Decor Shapes */}
+      <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-secondary-container/15 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Header & Branding */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-3 group mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-amber-400 p-0.5 shadow-lg group-hover:scale-105 transition-transform duration-300">
-              <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center">
-                <span className="text-white font-extrabold text-2xl tracking-tighter">D</span>
-              </div>
+      <div className="max-w-md w-full mx-auto relative z-10 my-auto space-y-6">
+        {/* Brand Logo & Header */}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="text-white font-display font-extrabold text-2xl">D</span>
             </div>
             <div className="text-left">
-              <span className="text-2xl font-bold tracking-tight text-white block">
+              <span className="text-2xl font-display font-extrabold text-primary block leading-none">
                 Dream Homes
               </span>
-              <span className="text-xs font-bold tracking-widest text-amber-400 uppercase">
+              <span className="text-[11px] font-bold tracking-widest text-secondary uppercase">
                 PG Jodhpur Portal
               </span>
             </div>
-          </Link>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            Portal Access
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-primary tracking-tight">
+            Welcome Back
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Sign in to access your Tenant or Owner Dashboard
+          <p className="text-onSurface-variant text-xs sm:text-sm mt-1">
+            Sign in to access your Tenant Portal or Owner Dashboard
           </p>
         </div>
 
-        {/* Role Selector Tabs */}
-        <div className="bg-slate-800/80 backdrop-blur-xl p-1.5 rounded-2xl border border-slate-700/60 flex gap-1 mb-6 shadow-xl">
+        {/* Role Selector Tabs (Material 3 Pill Style) */}
+        <div className="bg-surface-container-high/60 p-1.5 rounded-full border border-outline-variant/40 flex gap-1 shadow-sm">
           <button
             type="button"
             onClick={() => {
@@ -226,13 +224,13 @@ function LoginContent() {
               setError("");
               setSuccessMsg("");
             }}
-            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 py-3 px-4 rounded-full text-xs font-display font-bold transition-all flex items-center justify-center gap-2 ${
               role === "tenant"
-                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-900/40"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                ? "bg-primary text-white shadow-md shadow-primary/25"
+                : "text-onSurface-variant hover:text-primary hover:bg-surface-container"
             }`}
           >
-            <span className="text-base">🏠</span> PG Tenant
+            <span className="text-sm">🏠</span> PG Tenant Login
           </button>
           <button
             type="button"
@@ -241,27 +239,27 @@ function LoginContent() {
               setError("");
               setSuccessMsg("");
             }}
-            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 py-3 px-4 rounded-full text-xs font-display font-bold transition-all flex items-center justify-center gap-2 ${
               role === "owner"
-                ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-900/40"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40"
+                ? "bg-secondary-container text-white shadow-md shadow-secondary-container/25"
+                : "text-onSurface-variant hover:text-primary hover:bg-surface-container"
             }`}
           >
-            <span className="text-base">🏢</span> Owner / Admin
+            <span className="text-sm">🏢</span> Owner / Admin
           </button>
         </div>
 
-        {/* Card Container */}
-        <div className="bg-slate-900/90 backdrop-blur-2xl rounded-3xl border border-slate-800 shadow-2xl p-6 sm:p-8">
+        {/* Main Card (DESIGN.md Ambient Floating Card) */}
+        <div className="bg-white rounded-[24px] border border-outline-variant/40 ambient-shadow p-6 sm:p-8 space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-300 rounded-xl p-3.5 text-sm mb-6 flex items-start gap-2.5 animate-fadeIn">
-              <span className="text-base mt-0.5">⚠️</span>
-              <div className="flex-1">{error}</div>
+            <div className="bg-error/10 border border-error/30 text-error rounded-2xl p-3.5 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
+              <span className="text-base">⚠️</span>
+              <div>{error}</div>
             </div>
           )}
 
           {successMsg && (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-xl p-3.5 text-sm mb-6 flex items-center gap-2.5 animate-fadeIn">
+            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 rounded-2xl p-3.5 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
               <span className="text-base">✅</span>
               <div>{successMsg}</div>
             </div>
@@ -269,22 +267,21 @@ function LoginContent() {
 
           {/* TENANT LOGIN FORM */}
           {role === "tenant" && (
-            <div>
-              <div className="flex items-center justify-between mb-5">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Tenant Login</h2>
-                  <p className="text-xs text-slate-400">Access complaints, rent status & PG details</p>
+                  <h2 className="text-base font-display font-bold text-primary">Tenant Sign In</h2>
+                  <p className="text-[11px] text-onSurface-variant">Access room info, WiFi & maintenance complaints</p>
                 </div>
 
-                {/* Sub auth method toggle */}
-                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+                <div className="flex bg-surface-container p-1 rounded-xl border border-outline-variant/40 text-[11px]">
                   <button
                     type="button"
                     onClick={() => setTenantAuthMethod("email")}
-                    className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
                       tenantAuthMethod === "email"
-                        ? "bg-purple-600 text-white"
-                        : "text-slate-400 hover:text-slate-200"
+                        ? "bg-primary text-white"
+                        : "text-onSurface-variant"
                     }`}
                   >
                     Email
@@ -292,10 +289,10 @@ function LoginContent() {
                   <button
                     type="button"
                     onClick={() => setTenantAuthMethod("phone")}
-                    className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
                       tenantAuthMethod === "phone"
-                        ? "bg-purple-600 text-white"
-                        : "text-slate-400 hover:text-slate-200"
+                        ? "bg-primary text-white"
+                        : "text-onSurface-variant"
                     }`}
                   >
                     Phone
@@ -307,23 +304,21 @@ function LoginContent() {
                 {tenantAuthMethod === "email" ? (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-                        Tenant Registered Email
+                      <label className="block text-[11px] font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">
+                        Registered Tenant Email
                       </label>
-                      <div className="relative">
-                        <input
-                          type="email"
-                          required
-                          value={tenantEmail}
-                          onChange={(e) => setTenantEmail(e.target.value)}
-                          placeholder="e.g. arjun@tenant.com"
-                          className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
-                        />
-                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={tenantEmail}
+                        onChange={(e) => setTenantEmail(e.target.value)}
+                        placeholder="e.g. arjun@tenant.com"
+                        className="w-full h-12 bg-surface border border-outline-variant/60 rounded-xl px-4 text-sm text-primary font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                      />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                      <label className="block text-[11px] font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">
                         Password
                       </label>
                       <div className="relative">
@@ -333,12 +328,12 @@ function LoginContent() {
                           value={tenantPassword}
                           onChange={(e) => setTenantPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all pr-10"
+                          className="w-full h-12 bg-surface border border-outline-variant/60 rounded-xl px-4 pr-12 text-sm text-primary font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                         />
                         <button
                           type="button"
                           onClick={() => setShowTenantPassword(!showTenantPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-semibold"
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-primary"
                         >
                           {showTenantPassword ? "Hide" : "Show"}
                         </button>
@@ -348,7 +343,7 @@ function LoginContent() {
                 ) : (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                      <label className="block text-[11px] font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">
                         Registered Mobile Number
                       </label>
                       <input
@@ -357,12 +352,12 @@ function LoginContent() {
                         value={tenantPhone}
                         onChange={(e) => setTenantPhone(e.target.value)}
                         placeholder="+91 9988776655"
-                        className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                        className="w-full h-12 bg-surface border border-outline-variant/60 rounded-xl px-4 text-sm text-primary font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                      <label className="block text-[11px] font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">
                         Access PIN / OTP
                       </label>
                       <input
@@ -372,7 +367,7 @@ function LoginContent() {
                         value={tenantPin}
                         onChange={(e) => setTenantPin(e.target.value)}
                         placeholder="Default PIN: 1234"
-                        className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                        className="w-full h-12 bg-surface border border-outline-variant/60 rounded-xl px-4 text-sm text-primary font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                       />
                     </div>
                   </>
@@ -381,7 +376,7 @@ function LoginContent() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-purple-900/30 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-primary hover:bg-primary-container text-white font-display font-bold text-sm rounded-xl shadow-lg shadow-primary/20 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -395,8 +390,8 @@ function LoginContent() {
               </form>
 
               {/* Demo Tenant Quick Fill */}
-              <div className="mt-6 pt-5 border-t border-slate-800">
-                <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">
+              <div className="pt-4 border-t border-surface-container">
+                <p className="text-[11px] font-bold text-onSurface-variant uppercase tracking-wider mb-2">
                   ⚡ Quick Demo Tenant Accounts:
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -405,12 +400,12 @@ function LoginContent() {
                       key={st.id}
                       type="button"
                       onClick={() => handleQuickTenantSelect(st)}
-                      className="text-left bg-slate-800/60 hover:bg-purple-950/50 border border-slate-700/80 hover:border-purple-500/50 p-2.5 rounded-xl transition-all group"
+                      className="text-left bg-surface-container/60 hover:bg-primary/5 border border-outline-variant/40 hover:border-primary/40 p-2.5 rounded-xl transition-all group"
                     >
-                      <div className="text-xs font-bold text-white group-hover:text-purple-300">
+                      <div className="text-xs font-bold text-primary group-hover:text-primary-container">
                         🏠 {st.name}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[10px] text-onSurface-variant">
                         {st.pg_name.replace("Dream Homes PG - ", "")} • Room {st.room_number}
                       </div>
                     </button>
@@ -422,15 +417,15 @@ function LoginContent() {
 
           {/* OWNER LOGIN FORM */}
           {role === "owner" && (
-            <div>
-              <div className="mb-5">
-                <h2 className="text-lg font-bold text-white">Owner / Admin Sign In</h2>
-                <p className="text-xs text-slate-400">Manage PG properties, rooms, complaints & enquiries</p>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-base font-display font-bold text-primary">Owner / Admin Sign In</h2>
+                <p className="text-[11px] text-onSurface-variant">Manage PG properties, rooms & tenant complaints</p>
               </div>
 
               <form onSubmit={handleOwnerSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-[11px] font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">
                     Owner Email Address
                   </label>
                   <input
@@ -439,12 +434,12 @@ function LoginContent() {
                     value={ownerEmail}
                     onChange={(e) => setOwnerEmail(e.target.value)}
                     placeholder="owner@dreamhomespg.com"
-                    className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all"
+                    className="w-full h-12 bg-surface border border-outline-variant/60 rounded-xl px-4 text-sm text-primary font-medium focus:outline-none focus:border-secondary-container focus:ring-2 focus:ring-secondary-container/20 transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-[11px] font-bold text-onSurface-variant mb-1.5 uppercase tracking-wider">
                     Admin Password
                   </label>
                   <div className="relative">
@@ -454,12 +449,12 @@ function LoginContent() {
                       value={ownerPassword}
                       onChange={(e) => setOwnerPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-800/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all pr-10"
+                      className="w-full h-12 bg-surface border border-outline-variant/60 rounded-xl px-4 pr-12 text-sm text-primary font-medium focus:outline-none focus:border-secondary-container focus:ring-2 focus:ring-secondary-container/20 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowOwnerPassword(!showOwnerPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-semibold"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-secondary-container"
                     >
                       {showOwnerPassword ? "Hide" : "Show"}
                     </button>
@@ -469,7 +464,7 @@ function LoginContent() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-amber-900/30 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-secondary-container hover:bg-secondary text-white font-display font-bold text-sm rounded-xl shadow-lg shadow-secondary-container/20 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -483,24 +478,24 @@ function LoginContent() {
               </form>
 
               {/* Demo Owner Quick Fill */}
-              <div className="mt-6 pt-5 border-t border-slate-800">
-                <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">
-                  🔑 Quick Demo Owner Credentials:
+              <div className="pt-4 border-t border-surface-container">
+                <p className="text-[11px] font-bold text-onSurface-variant uppercase tracking-wider mb-2">
+                  🔑 Quick Demo Owner Account:
                 </p>
                 <button
                   type="button"
                   onClick={handleQuickOwnerSelect}
-                  className="w-full text-left bg-slate-800/60 hover:bg-amber-950/50 border border-slate-700/80 hover:border-amber-500/50 p-3 rounded-xl transition-all flex items-center justify-between group"
+                  className="w-full text-left bg-surface-container/60 hover:bg-secondary/5 border border-outline-variant/40 hover:border-secondary/40 p-3 rounded-xl transition-all flex items-center justify-between group"
                 >
                   <div>
-                    <div className="text-xs font-bold text-white group-hover:text-amber-300">
-                      🏢 Owner Account
+                    <div className="text-xs font-bold text-primary group-hover:text-secondary">
+                      🏢 Owner / Property Manager
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[10px] text-onSurface-variant">
                       owner@dreamhomespg.com / admin123
                     </div>
                   </div>
-                  <span className="text-xs text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-md">
+                  <span className="text-[10px] font-bold text-white bg-secondary-container px-2.5 py-1 rounded-md">
                     Autofill
                   </span>
                 </button>
@@ -510,12 +505,12 @@ function LoginContent() {
         </div>
 
         {/* Footer Navigation */}
-        <div className="text-center mt-6">
+        <div className="text-center pt-2">
           <Link
-            href="/"
-            className="text-slate-400 text-sm hover:text-white transition-colors inline-flex items-center gap-1"
+            href="/pgs"
+            className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
           >
-            ← Return to Main Website
+            Browse All PG Properties Without Logging In →
           </Link>
         </div>
       </div>
@@ -527,12 +522,12 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
+        <div className="min-h-screen bg-surface flex items-center justify-center text-primary font-bold">
           Loading portal...
         </div>
       }
     >
-      <LoginContent />
+      <LoginFormComponent />
     </Suspense>
   );
 }

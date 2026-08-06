@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import {
   Bot,
   User,
@@ -22,7 +23,13 @@ import {
 } from "lucide-react";
 
 export default function Chatbot() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Hide AI chatbot on login page and root landing screen
+  if (pathname === "/login" || pathname === "/") {
+    return null;
+  }
   const [messages, setMessages] = useState([
     {
       role: "assistant",
