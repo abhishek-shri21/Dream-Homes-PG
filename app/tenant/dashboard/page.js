@@ -108,8 +108,6 @@ export default function TenantDashboard() {
     switch (status) {
       case "resolved":
         return <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">✓ Resolved</span>;
-      case "in_progress":
-        return <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">⚡ In Progress</span>;
       case "assigned":
         return <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1">👤 Technician Assigned</span>;
       default:

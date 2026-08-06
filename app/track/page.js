@@ -4,12 +4,11 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { getComplaintById } from "../../lib/db";
 
-const statusSteps = ["pending", "assigned", "in_progress", "resolved"];
-const statusLabels = { pending: "Pending", assigned: "Assigned", in_progress: "In Progress", resolved: "Resolved" };
+const statusSteps = ["pending", "assigned", "resolved"];
+const statusLabels = { pending: "Pending", assigned: "Assigned", resolved: "Resolved" };
 const statusColors = {
   pending: "status-pending",
   assigned: "status-assigned",
-  in_progress: "status-inprogress",
   resolved: "status-resolved",
 };
 

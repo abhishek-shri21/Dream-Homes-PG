@@ -7,8 +7,8 @@ import {
   updateEnquiryStatus as dbUpdateEnquiryStatus
 } from "../../../lib/db";
 
-const statusColors = { pending: "status-pending", assigned: "status-assigned", in_progress: "status-inprogress", resolved: "status-resolved" };
-const statusLabels = { pending: "Pending", assigned: "Assigned", in_progress: "In Progress", resolved: "Resolved" };
+const statusColors = { pending: "status-pending", assigned: "status-assigned", resolved: "status-resolved" };
+const statusLabels = { pending: "Pending", assigned: "Assigned", resolved: "Resolved" };
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -173,7 +173,6 @@ export default function AdminDashboard() {
                     >
                       <option value="pending">Pending</option>
                       <option value="assigned">Assigned</option>
-                      <option value="in_progress">In Progress</option>
                       <option value="resolved">Resolved</option>
                     </select>
                   </div>
