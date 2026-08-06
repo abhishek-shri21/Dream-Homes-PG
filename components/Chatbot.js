@@ -25,11 +25,6 @@ import {
 export default function Chatbot() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-
-  // Hide AI chatbot on login page and root landing screen
-  if (pathname === "/login" || pathname === "/") {
-    return null;
-  }
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -48,35 +43,33 @@ export default function Chatbot() {
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState(null);
 
-  // Settings & API Key
+  // Settings & Context States
   const [showSettings, setShowSettings] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [copiedIndex, setCopiedIndex] = useState(null);
+  const [copiedIdx, setCopiedIdx] = useState(null);
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  useEffect(() => {
-    const savedKey = localStorage.getItem("groq_api_key") || localStorage.getItem("grok_api_key");
-    if (savedKey) {
-      setApiKey(savedKey);
-    }
-  }, []);
+  // Auto-scroll to bottom of chat
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  // Initialize Speech Recognition
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
+
+  // Speech Recognition Setup (Web Speech API)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
+
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = true;
-        recognition.lang = "en-IN";
-
-        recognition.onstart = () => {
-          setIsListening(true);
-        };
+        recognition.lang = "en-IN"; // English (India) with Hindi understanding
 
         recognition.onresult = (event) => {
           let currentTranscript = "";
@@ -88,7 +81,7 @@ export default function Chatbot() {
         };
 
         recognition.onerror = (event) => {
-          console.error("Speech recognition error:", event.error);
+          console.warn("Speech recognition error:", event.error);
           setIsListening(false);
         };
 
@@ -103,80 +96,91 @@ export default function Chatbot() {
     }
   }, []);
 
-  // Auto scroll to bottom of chat
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading, isListening]);
-
-  // Handle Speech Recognition Toggle
+  // Voice Command Toggle
   const toggleListening = () => {
-    if (!speechSupported) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
-      return;
-    }
+    if (!recognitionRef.current) return;
 
     if (isListening) {
-      recognitionRef.current?.stop();
+      recognitionRef.current.stop();
       setIsListening(false);
     } else {
       setTranscript("");
-      try {
-        recognitionRef.current?.start();
-      } catch (err) {
-        console.error("Failed to start speech recognition:", err);
-      }
+      recognitionRef.current.start();
+      setIsListening(true);
     }
   };
 
-  // Text-To-Speech (TTS) response reader
-  const speakText = (text, index) => {
+  // Text to Speech (TTS) Output
+  const speakText = (text, msgIndex) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
-    if (speakingMsgId === index) {
+    if (speakingMsgId === msgIndex) {
       window.speechSynthesis.cancel();
       setSpeakingMsgId(null);
       return;
     }
 
-    window.speechSynthesis.cancel();
-    const cleanText = text.replace(/[*_#`•]/g, "");
+    window.speechSynthesis.cancel(); // Stop any active speech
+
+    // Clean markdown formatting for speech
+    const cleanText = text
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+      .replace(/#/g, "");
+
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = "en-IN";
     utterance.rate = 1.0;
+
     utterance.onend = () => setSpeakingMsgId(null);
     utterance.onerror = () => setSpeakingMsgId(null);
 
-    setSpeakingMsgId(index);
+    setSpeakingMsgId(msgIndex);
     window.speechSynthesis.speak(utterance);
   };
 
-  // Save Settings to localStorage
-  const handleSaveSettings = (e) => {
-    e.preventDefault();
-    localStorage.setItem("groq_api_key", apiKey.trim());
-    setShowSettings(false);
+  // Copy Message to Clipboard
+  const handleCopy = (text, idx) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    }
   };
 
-  // Send message to server backend API
-  const handleSend = async (customText = null) => {
-    const textToSend = customText || input;
-    if (!textToSend.trim() || loading) return;
+  // Clear Chat History
+  const handleClearHistory = () => {
+    setMessages([
+      {
+        role: "assistant",
+        content: "Chat history cleared. How can I assist you today?",
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+  };
 
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-    }
+  // Quick Suggestion Chips
+  const suggestions = [
+    "💰 Show room rent prices",
+    "📍 What are PG locations?",
+    "🍲 Tell me about Mess food",
+    "🔧 How to raise complaint?",
+    "🔔 Check room availability",
+  ];
+
+  const handleSendMessage = async (textToSend) => {
+    const query = textToSend || input;
+    if (!query.trim() || loading) return;
 
     const userMessage = {
       role: "user",
-      content: textToSend.trim(),
+      content: query,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setTranscript("");
     setLoading(true);
 
     try {
@@ -184,26 +188,29 @@ export default function Chatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages.map(({ role, content }) => ({ role, content })),
-          userApiKey: apiKey,
+          messages: [...messages, userMessage].map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         }),
       });
 
       const data = await response.json();
-      const botReply =
-        data?.reply ||
-        "Sorry, I couldn't process your request right now. Please try calling us at +91 98765 43210.";
 
-      const botMessage = {
-        role: "assistant",
-        content: botReply,
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
+      if (data.reply) {
+        const assistantMessage = {
+          role: "assistant",
+          content: data.reply,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
 
-      setMessages((prev) => [...prev, botMessage]);
-
-      if (ttsEnabled) {
-        speakText(botReply, newMessages.length);
+        // Auto read out if TTS is enabled
+        if (ttsEnabled) {
+          speakText(data.reply, messages.length + 1);
+        }
+      } else {
+        throw new Error(data.error || "No response received");
       }
     } catch (err) {
       console.error("Chat error:", err);
@@ -211,7 +218,8 @@ export default function Chatbot() {
         ...prev,
         {
           role: "assistant",
-          content: "⚠️ Network connection error. Please try again or call owner Ramesh Sharma at +91 98765 43210.",
+          content:
+            "⚠️ Sorry, I encountered an issue connecting to the assistant. Please try again or call our team directly.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -220,34 +228,10 @@ export default function Chatbot() {
     }
   };
 
-  // Copy message text
-  const copyToClipboard = (text, index) => {
-    navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
-
-  // Render markdown formatting cleanly
-  const renderFormattedText = (text) => {
-    return text.split("\n").map((line, i) => {
-      const formattedLine = line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-      return (
-        <span
-          key={i}
-          className="block min-h-[1.2em]"
-          dangerouslySetInnerHTML={{ __html: formattedLine }}
-        />
-      );
-    });
-  };
-
-  const quickPrompts = [
-    "🔍 PGs under ₹5,000",
-    "👧 Girls PGs in Jodhpur",
-    "🛠️ How to raise complaint?",
-    "⚡ Amenities included?",
-    "📞 Owner contact details",
-  ];
+  // Hide AI chatbot on login page and root landing screen (AFTER ALL HOOKS ARE CALLED!)
+  if (pathname === "/login" || pathname === "/") {
+    return null;
+  }
 
   return (
     <>
@@ -288,159 +272,131 @@ export default function Chatbot() {
                 <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-primary rounded-full"></span>
               </div>
               <div>
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-base tracking-tight text-white">DreamPGbot</h3>
-                  <span className="bg-white/20 text-white border border-white/30 text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
-                    AI Assistant
+                <h3 className="font-display font-extrabold text-base leading-tight flex items-center gap-1.5">
+                  DreamPGbot
+                  <span className="bg-amber-400/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300/30">
+                    AI Active
                   </span>
-                </div>
-                <p className="text-[11px] text-purple-200/90 font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  Voice Enabled & Online
-                </p>
+                </h3>
+                <p className="text-[11px] text-white/80 font-medium">Jodhpur PG Virtual Assistant</p>
               </div>
             </div>
 
-            {/* Header Controls */}
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setTtsEnabled(!ttsEnabled)}
                 className={`p-2 rounded-xl transition-all ${
-                  ttsEnabled ? "bg-white/25 text-amber-300" : "hover:bg-white/10 text-purple-200"
+                  ttsEnabled ? "bg-white/20 text-amber-300" : "text-white/70 hover:bg-white/10"
                 }`}
-                title={ttsEnabled ? "Sound Enabled (Click to Mute)" : "Sound Muted (Click to Enable Voice Response)"}
+                title={ttsEnabled ? "Disable Auto-Voice Output" : "Enable Auto-Voice Output"}
               >
                 {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
               </button>
 
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className={`p-2 rounded-xl transition-all ${
-                  showSettings ? "bg-white/25 text-white" : "hover:bg-white/10 text-purple-200"
-                }`}
-                title="AI Settings"
+                className="p-2 rounded-xl text-white/70 hover:bg-white/10 transition-all"
+                title="Settings & Options"
               >
                 <Settings className="w-4 h-4" />
               </button>
 
               <button
-                onClick={() =>
-                  setMessages([
-                    {
-                      role: "assistant",
-                      content: "Chat history cleared. How can I assist you now?",
-                      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                    },
-                  ])
-                }
-                className="p-2 hover:bg-white/10 text-purple-200 hover:text-white rounded-xl transition-all"
-                title="Clear Chat"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-
-              <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-white/10 text-purple-200 hover:text-white rounded-xl transition-all"
-                title="Close Chat"
+                className="p-2 rounded-xl text-white/80 hover:bg-white/20 hover:text-white transition-all ml-1"
+                aria-label="Close Chat"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* Settings Modal Bar */}
+          {/* Settings Sub-Menu Drawer */}
           {showSettings && (
-            <form
-              onSubmit={handleSaveSettings}
-              className="bg-purple-950 text-white p-3.5 border-b border-purple-800 animate-in slide-in-from-top-2 duration-200"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold flex items-center gap-1.5 text-purple-200">
-                  <Key className="w-3.5 h-3.5 text-amber-400" /> AI Assistant Settings
-                </span>
+            <div className="bg-purple-950 text-white p-3 text-xs flex items-center justify-between border-b border-purple-800 animate-in fade-in duration-200">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>24/7 AI Smart Assistant</span>
               </div>
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Optional custom API key"
-                  className="flex-1 bg-purple-900/60 border border-purple-700/60 text-xs text-white placeholder-purple-400 rounded-xl px-3 py-1.5 focus:outline-none focus:border-amber-400"
-                />
+              <div className="flex items-center gap-2">
                 <button
-                  type="submit"
-                  className="bg-amber-500 hover:bg-amber-400 text-purple-950 font-bold text-xs px-3 py-1.5 rounded-xl transition-colors"
+                  onClick={handleClearHistory}
+                  className="flex items-center gap-1 text-purple-200 hover:text-white bg-purple-900/60 px-2.5 py-1 rounded-lg transition-all"
                 >
-                  Save Settings
+                  <RotateCcw className="w-3 h-3" /> Clear Chat
                 </button>
               </div>
-              <p className="text-[10px] text-purple-300 mt-1.5">
-                DreamPGbot provides instant intelligent responses for Dream Homes PG.
-              </p>
-            </form>
+            </div>
           )}
 
-          {/* Chat Messages Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-gray-50/50 to-white">
-            {messages.map((msg, index) => (
+          {/* Messages Body */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50/50 to-white">
+            {messages.map((msg, idx) => (
               <div
-                key={index}
-                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                key={idx}
+                className={`flex gap-2.5 ${
+                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                } items-start animate-fadeIn`}
               >
                 {/* Avatar */}
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ${
                     msg.role === "user"
-                      ? "bg-primary text-white"
-                      : "bg-gradient-to-br from-purple-600 to-indigo-600 text-white"
+                      ? "bg-gradient-to-br from-secondary-container to-secondary text-white"
+                      : "bg-gradient-to-br from-primary to-primary-container text-white"
                   }`}
                 >
                   {msg.role === "user" ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`max-w-[80%] space-y-1 group`}>
+                <div className={`group relative max-w-[80%] space-y-1`}>
                   <div
                     className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm ${
                       msg.role === "user"
                         ? "bg-primary text-white rounded-tr-none font-medium"
-                        : "bg-white text-gray-800 border border-gray-100 rounded-tl-none"
+                        : "bg-white border border-gray-100 text-gray-800 rounded-tl-none shadow-gray-100/50"
                     }`}
                   >
-                    {renderFormattedText(msg.content)}
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
                   </div>
 
-                  {/* Timestamp & Actions */}
+                  {/* Actions Bar (Copy & Voice Speak) */}
                   <div
                     className={`flex items-center gap-2 text-[10px] text-gray-400 ${
                       msg.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    } px-1`}
                   >
                     <span>{msg.timestamp}</span>
                     {msg.role === "assistant" && (
-                      <button
-                        onClick={() => copyToClipboard(msg.content, index)}
-                        className="opacity-0 group-hover:opacity-100 hover:text-gray-600 transition-opacity"
-                        title="Copy text"
-                      >
-                        {copiedIndex === index ? (
-                          <Check className="w-3 h-3 text-emerald-500" />
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                      </button>
-                    )}
-                    {msg.role === "assistant" && ttsEnabled && (
-                      <button
-                        onClick={() => speakText(msg.content, index)}
-                        className={`opacity-0 group-hover:opacity-100 transition-opacity ${
-                          speakingMsgId === index ? "text-amber-500 opacity-100" : "hover:text-gray-600"
-                        }`}
-                        title="Listen to response"
-                      >
-                        <Volume2 className="w-3 h-3" />
-                      </button>
+                      <>
+                        <span>•</span>
+                        <button
+                          onClick={() => speakText(msg.content, idx)}
+                          className={`hover:text-primary transition-colors ${
+                            speakingMsgId === idx ? "text-primary font-bold animate-pulse" : ""
+                          }`}
+                          title="Read Aloud"
+                        >
+                          {speakingMsgId === idx ? "🔊 Speaking..." : "📢 Speak"}
+                        </button>
+                        <span>•</span>
+                        <button
+                          onClick={() => handleCopy(msg.content, idx)}
+                          className="hover:text-primary transition-colors flex items-center gap-0.5"
+                          title="Copy text"
+                        >
+                          {copiedIdx === idx ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-600" /> Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" /> Copy
+                            </>
+                          )}
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -449,17 +405,21 @@ export default function Chatbot() {
 
             {/* Loading Indicator */}
             {loading && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-sm animate-pulse">
-                  <Bot className="w-4 h-4" />
+              <div className="flex items-center gap-2.5 animate-fadeIn">
+                <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
+                  <Bot className="w-4 h-4 animate-spin" />
                 </div>
-                <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-none p-3 shadow-sm flex items-center gap-2">
-                  <span className="text-xs font-semibold text-purple-700">DreamPGbot is thinking</span>
-                  <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                  </div>
+                <div className="bg-white border border-gray-100 rounded-2xl rounded-tl-none p-3.5 text-xs text-gray-500 shadow-sm flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                  <div
+                    className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-primary rounded-full animate-bounce"
+                    style={{ animationDelay: "0.4s" }}
+                  ></div>
+                  <span className="font-semibold text-primary ml-1">DreamPGbot is thinking...</span>
                 </div>
               </div>
             )}
@@ -467,61 +427,71 @@ export default function Chatbot() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Suggestions */}
-          <div className="px-3 py-2 bg-gray-50/80 border-t border-gray-100 overflow-x-auto whitespace-nowrap scrollbar-none flex gap-2">
-            {quickPrompts.map((prompt, idx) => (
+          {/* Quick Suggestion Chips */}
+          <div className="p-2 bg-white border-t border-gray-100 flex gap-1.5 overflow-x-auto no-scrollbar">
+            {suggestions.map((sug, idx) => (
               <button
                 key={idx}
-                onClick={() => handleSend(prompt)}
-                className="text-[11px] font-medium bg-white hover:bg-purple-50 text-gray-700 hover:text-purple-700 border border-gray-200/80 hover:border-purple-200 px-2.5 py-1 rounded-full shadow-2xs transition-all flex-shrink-0"
+                onClick={() => handleSendMessage(sug)}
+                className="whitespace-nowrap bg-primary/5 hover:bg-primary/10 text-primary border border-primary/10 text-[11px] font-semibold px-3 py-1.5 rounded-full transition-all shrink-0"
               >
-                {prompt}
+                {sug}
               </button>
             ))}
           </div>
 
-          {/* Input Form */}
-          <div className="p-3 bg-white border-t border-gray-100">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              className="flex items-center gap-2"
-            >
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={isListening ? "Listening..." : "Ask about PG rooms, rent, facilities..."}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-4 pr-10 py-2.5 text-xs sm:text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:bg-white transition-all"
-                />
+          {/* Voice Input Indicator Banner */}
+          {isListening && (
+            <div className="bg-amber-50 border-t border-amber-200 p-2 text-center text-xs font-bold text-amber-800 flex items-center justify-center gap-2 animate-pulse">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+              Listening... Speak your question clearly into your microphone
+            </div>
+          )}
 
-                {/* Voice mic button */}
-                <button
-                  type="button"
-                  onClick={toggleListening}
-                  className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl transition-all ${
-                    isListening
-                      ? "bg-red-500 text-white animate-pulse"
-                      : "text-gray-400 hover:text-purple-600 hover:bg-purple-50"
-                  }`}
-                  title={isListening ? "Stop listening" : "Start voice input"}
-                >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-              </div>
+          {/* Input Footer */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }}
+            className="p-3 bg-white border-t border-gray-100 flex items-center gap-2"
+          >
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={
+                isListening ? "Listening to your voice..." : "Ask DreamPGbot anything..."
+              }
+              className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-gray-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
+            />
 
+            {/* Voice Input Button */}
+            {speechSupported && (
               <button
-                type="submit"
-                disabled={!input.trim() || loading}
-                className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-purple-700 text-white flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-40 transition-all flex-shrink-0"
+                type="button"
+                onClick={toggleListening}
+                className={`p-2.5 rounded-2xl transition-all ${
+                  isListening
+                    ? "bg-red-500 text-white shadow-md shadow-red-500/30 animate-pulse"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                }`}
+                title={isListening ? "Stop Listening" : "Start Voice Input"}
               >
-                <Send className="w-4 h-4" />
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
-            </form>
-          </div>
+            )}
+
+            {/* Send Button */}
+            <button
+              type="submit"
+              disabled={!input.trim() || loading}
+              className="bg-primary hover:bg-primary-container text-white p-2.5 rounded-2xl shadow-md transition-all disabled:opacity-40"
+              aria-label="Send Message"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
         </div>
       )}
     </>
