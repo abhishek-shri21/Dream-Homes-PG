@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase, hasSupabaseConfig } from "../lib/supabaseClient";
 import { demoTenants } from "../lib/db";
 
-export default function LoginForm() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialRole = searchParams.get("role") === "owner" ? "owner" : "tenant";
@@ -95,12 +95,12 @@ export default function LoginForm() {
             localStorage.setItem("pg_tenant_user", JSON.stringify(tenantProfile));
           }
           setSuccessMsg("Login successful! Redirecting to Tenant Portal...");
-          setTimeout(() => router.push("/tenant/dashboard"), 500);
+          setTimeout(() => router.push("/tenant/dashboard"), 400);
           return;
         }
       }
 
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 300));
 
       let matchedTenant = null;
       if (tenantAuthMethod === "email") {
@@ -133,7 +133,7 @@ export default function LoginForm() {
           localStorage.setItem("pg_tenant_user", JSON.stringify(profile));
         }
         setSuccessMsg("Welcome back! Redirecting to Tenant Dashboard...");
-        setTimeout(() => router.push("/tenant/dashboard"), 500);
+        setTimeout(() => router.push("/tenant/dashboard"), 400);
       } else {
         setError("Invalid credentials. Please use demo tenant accounts below.");
       }
@@ -165,12 +165,12 @@ export default function LoginForm() {
             localStorage.setItem("pg_owner_email", ownerEmail);
           }
           setSuccessMsg("Owner verified! Redirecting to Owner Dashboard...");
-          setTimeout(() => router.push("/admin/dashboard"), 500);
+          setTimeout(() => router.push("/admin/dashboard"), 400);
           return;
         }
       }
 
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 300));
 
       if (ownerEmail.toLowerCase().includes("owner") && ownerPassword === "admin123") {
         if (typeof window !== "undefined") {
@@ -178,7 +178,7 @@ export default function LoginForm() {
           localStorage.setItem("pg_owner_email", ownerEmail);
         }
         setSuccessMsg("Welcome Owner! Redirecting to Management Dashboard...");
-        setTimeout(() => router.push("/admin/dashboard"), 500);
+        setTimeout(() => router.push("/admin/dashboard"), 400);
       } else {
         setError("Invalid Owner credentials. Demo: owner@dreamhomespg.com / admin123");
       }
@@ -220,7 +220,7 @@ export default function LoginForm() {
           </p>
         </div>
 
-        {/* Role Selector Tabs (Material 3 Pill Style) */}
+        {/* Role Selector Tabs */}
         <div className="bg-surface-container-high/60 p-1.5 rounded-full border border-outline-variant/40 flex gap-1 shadow-sm">
           <button
             type="button"
@@ -520,5 +520,22 @@ export default function LoginForm() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginForm() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-surface flex items-center justify-center text-primary font-bold text-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span>Loading Login Portal...</span>
+          </div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
