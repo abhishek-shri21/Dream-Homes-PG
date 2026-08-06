@@ -21,9 +21,15 @@ function PgsListContent() {
 
   useEffect(() => {
     async function loadData() {
-      const data = await getPGs();
-      setPgs(data);
-      setLoading(false);
+      try {
+        const data = await getPGs();
+        setPgs(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load PGs:", err);
+        setPgs([]);
+      } finally {
+        setLoading(false);
+      }
     }
     loadData();
   }, []);
@@ -46,16 +52,19 @@ function PgsListContent() {
     "Sardarpura"
   ];
 
-  const filtered = pgs.filter((pg) => {
+  const filtered = (pgs || []).filter((pg) => {
+    if (!pg) return false;
+    const roomTypes = Array.isArray(pg.room_types) ? pg.room_types : [];
     const minRent =
-      pg.room_types && pg.room_types.length > 0
-        ? Math.min(...pg.room_types.map((r) => r.rent))
+      roomTypes.length > 0
+        ? Math.min(...roomTypes.map((r) => r.rent || 0))
         : 0;
 
+    const pgLocality = pg.locality || "";
     const matchesLocality =
       !locality ||
       locality.toLowerCase() === "all" ||
-      pg.locality.toLowerCase() === locality.toLowerCase();
+      pgLocality.toLowerCase() === locality.toLowerCase();
 
     const matchesType = !pgType || pg.pg_type === pgType;
     const matchesBudget = !budget || minRent <= parseInt(budget);
@@ -172,7 +181,7 @@ function PgsListContent() {
           </div>
 
           <span className="text-xs font-bold text-onSurface-variant">
-            Showing <span className="text-primary font-extrabold">{filtered.length}</span> of {pgs.length} Properties
+            Showing <span className="text-primary font-extrabold">{filtered.length}</span> of {(pgs || []).length} Properties
           </span>
         </div>
       </div>
